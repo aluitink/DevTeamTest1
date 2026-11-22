@@ -16,8 +16,16 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <!-- Reference the compiled console app so its output assembly (hello.dll)
+         is built and copied next to the test assembly for the integration tests. -->
     <ProjectReference Include="..\hello\hello.csproj" />
-    <ProjectReference Include="..\Greeter\Greeter.csproj" />
+    <!-- The integration tests launch "dotnet hello.dll"; make sure the app's
+         project dependency (Greeter.dll) is copied to the test output directory
+         as well, so the spawned process can resolve all of its dependencies. -->
+    <ProjectReference Include="..\Greeter\Greeter.csproj">
+      <Private>true</Private>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </ProjectReference>
   </ItemGroup>
 
 </Project>
