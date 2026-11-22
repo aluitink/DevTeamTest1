@@ -123,7 +123,50 @@ stdout; it confirms the only observable behavior is the greeting text line.
 
 ## Existing Tests
 
-_To be filled in._
+The repository uses **xUnit 2** (via the VSTest / `dotnet test` runner) for
+all testing. Two test projects exist, both targeting `net10.0`. All 7 tests
+were executed locally with `dotnet test` and **pass**.
+
+| Test project | Test file | Type | Tests | Status |
+| --- | --- | --- | --- | --- |
+| `Greeter.Tests` | `Greeter.Tests/GreeterTests.cs` | Unit tests for `Greeter.Greet` (normal, empty, and `null` input) | 3 | **Passing** |
+| `hello.Tests` | `hello.Tests/GreeterTests.cs` | Unit tests for `Greeter.Greet` (normal and empty input) | 2 | **Passing** |
+| `hello.Tests` | `hello.Tests/HelloAppIntegrationTests.cs` | Integration tests: launches the compiled `hello` console app as a subprocess and asserts on its stdout (with and without a CLI argument) | 2 | **Passing** |
+
+### Test details
+
+**`Greeter.Tests/GreeterTests.cs`** (3 tests, all passing)
+
+| Test method | Asserts |
+| --- | --- |
+| `Greet_World_Returns_Hello_World_Exclamation` | `Greet("World")` returns `"Hello, World!"` |
+| `Greet_EmptyString_Returns_Hello_Exclamation` | `Greet("")` returns `"Hello, !"` |
+| `Greet_Null_Returns_Hello_Exclamation` | `Greet(null)` returns `"Hello, !"` |
+
+**`hello.Tests/GreeterTests.cs`** (2 tests, all passing)
+
+| Test method | Asserts |
+| --- | --- |
+| `Greet_World_Returns_Hello_World_Exclamation` | `Greet("World")` returns `"Hello, World!"` |
+| `Greet_EmptyString_Returns_Hello_Exclamation` | `Greet(string.Empty)` returns `"Hello, !"` |
+
+**`hello.Tests/HelloAppIntegrationTests.cs`** (2 tests, all passing)
+
+| Test method | Asserts |
+| --- | --- |
+| `HelloApp_WithArgument_Alice_Prints_Hello_Alice` | Running `dotnet hello.dll Alice` prints `Hello, Alice!` with exit code 0 and empty stderr |
+| `HelloApp_WithoutArguments_Prints_Hello_World` | Running `dotnet hello.dll` prints `Hello, World!` with exit code 0 and empty stderr |
+
+### Execution summary
+
+- `dotnet test DevTeamTest1.slnx` (includes `hello.Tests`):
+  `Passed! - Failed: 0, Passed: 4, Skipped: 0, Total: 4` — **Passing**
+- `dotnet test Greeter.Tests/Greeter.Tests.csproj`:
+  `Passed! - Failed: 0, Passed: 3, Skipped: 0, Total: 3` — **Passing**
+
+No CI configuration (e.g. `.github/workflows`) exists in the repository, so
+status was determined by running the tests locally. There are no skipped,
+disabled (`[Fact(Skip = ...)]`), or failing tests.
 
 ## Feature Parity Checklist
 
