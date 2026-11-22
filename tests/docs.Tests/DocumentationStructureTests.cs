@@ -139,6 +139,46 @@ public class DocumentationStructureTests
     }
 
     // -----------------------------------------------------------------
+    // Cross-reference / internal-consistency checks
+    // -----------------------------------------------------------------
+
+    /// <summary>
+    /// CONTRIBUTING.md must not point at TypeScript projects (or shared
+    /// tsconfig files) that do not exist in the repository; its stack
+    /// rules are the convention for modern projects going forward.
+    /// </summary>
+    [Fact]
+    public void Contributing_DoesNotReferenceMissingTypeScriptProjects()
+    {
+        var doc = ReadDoc(ContributingDoc);
+        foreach (var missing in new[]
+        {
+            "tsconfig.base.json",
+            "src/api-responses",
+            "src/lib/validation",
+            "src/app/items",
+        })
+        {
+            Assert.DoesNotContain(missing, doc, StringComparison.Ordinal);
+        }
+
+        Assert.Contains("none exist in the repository yet", doc, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// CONTRIBUTING.md must not claim the CI pipeline enforces strict mode
+    /// (the workflow only installs dependencies); strict mode is enforced
+    /// through review instead.
+    /// </summary>
+    [Fact]
+    public void Contributing_DoesNotClaimCiEnforcesStrictMode()
+    {
+        var doc = ReadDoc(ContributingDoc);
+        Assert.DoesNotContain("The CI build fails", doc, StringComparison.Ordinal);
+        Assert.Contains("blocking review comment", doc, StringComparison.Ordinal);
+    }
+
+    // -----------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------
 
