@@ -45,12 +45,68 @@ is planned or begun.
 
 ## Decision Log
 
-Record significant decisions made during the migration here, newest
-first. Each entry should state the decision, the rationale, and the date.
+The Decision Log records significant decisions made during the migration.
+It is **append-only**: entries are added but never edited, deleted, or
+reordered after they are written. If a decision is later reversed, add a
+*new* entry that references the earlier one rather than modifying the
+original.
 
-| Date | Decision | Rationale |
-| --- | --- | --- |
-| 2026-01-01 | Established this migration document and tracking table. | Provides a single source of truth for migration status, ownership, and rationale (task #52). |
+### Entry Format
+
+Each entry must include all of the following fields:
+
+- **Date** — the date the decision was made (ISO 8601, `YYYY-MM-DD`).
+- **Decision Summary** — one or two sentences stating the decision in
+  imperative form ("We decided to …").
+- **Context/Problem Solved** — the situation or problem that motivated
+  the decision.
+- **Alternatives Considered** — other options that were evaluated and a
+  brief note on why each was rejected (or "none").
+- **Link to PR/Issue** — the pull request or issue where the decision
+  was made or tracked (e.g. `#123`).
+
+Entries are written using this template:
+
+```markdown
+### YYYY-MM-DD — <short decision title>
+
+- **Date:** YYYY-MM-DD
+- **Decision Summary:** …
+- **Context/Problem Solved:** …
+- **Alternatives Considered:** …
+- **Link to PR/Issue:** #NNN
+```
+
+### Entries
+
+#### 2026-01-01 — Establish migration document and tracking table
+
+- **Date:** 2026-01-01
+- **Decision Summary:** Create `docs/migration.md` as the single source of
+  truth for migration status, with a tracking table, a migration workflow,
+  and this Decision Log.
+- **Context/Problem Solved:** Migration status, ownership, and rationale
+  were scattered across conversation threads, so there was no reliable
+  place to answer "what is the state of feature X?" (task #52).
+- **Alternatives Considered:** A spreadsheet owned by a single maintainer
+  (rejected — not versioned, easy to go stale); per-feature READMEs
+  (rejected — status would be fragmented across files).
+- **Link to PR/Issue:** #52
+
+### Connection to `dropped` and `deprecated` Justifications
+
+Every `dropped` row — and every complex `deprecated` row (for example, one
+where the deprecation window was shortened or extended, or where the
+justification in the tracking table's **Justification/Notes** column
+references a non-obvious trade-off) — must be backed by a Decision Log
+entry. The tracking table explains *what* changed and *why*, in one cell;
+the Decision Log entry records the fuller deliberation — the context, the
+alternatives that were rejected, and the approval trail for `dropped`
+removals (see [Migration Statuses](migration/statuses.md) for the senior
+maintainer approval requirement). The tracking table's
+**Justification/Notes** cell and the Decision Log entry should reference
+each other so an auditor can move from the table row to the full record in
+either direction.
 
 ## Migration Workflow
 
