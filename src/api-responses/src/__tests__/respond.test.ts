@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { expect, test } from "vitest";
 
 import { jsonRouteResult, createNextResponseAdapter } from "../respond.js";
 import type { RouteResult } from "../handler.js";
@@ -16,15 +15,15 @@ const errorResult: RouteResult = {
 
 test("jsonRouteResult produces a framework-free JSON response", () => {
   const response = jsonRouteResult(okResult);
-  assert.equal(response.status, 200);
-  assert.equal(response.body, JSON.stringify({ data: { id: 1 } }));
-  assert.equal(response.headers["Content-Type"], "application/json");
+  expect(response.status).toBe(200);
+  expect(response.body).toBe(JSON.stringify({ data: { id: 1 } }));
+  expect(response.headers["Content-Type"]).toBe("application/json");
 });
 
 test("jsonRouteResult preserves error results", () => {
   const response = jsonRouteResult(errorResult);
-  assert.equal(response.status, 400);
-  assert.deepEqual(JSON.parse(response.body), {
+  expect(response.status).toBe(400);
+  expect(JSON.parse(response.body)).toEqual({
     error: { code: "BAD_REQUEST", message: "Request validation failed." },
   });
 });
@@ -43,9 +42,9 @@ test("createNextResponseAdapter delegates to NextResponse.json with the status",
   const adapter = createNextResponseAdapter(fakeNextServer);
   const response = adapter(errorResult);
 
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0]?.init?.status, 400);
-  assert.equal(calls[0]?.init?.headers?.["Content-Type"], "application/json");
-  assert.deepEqual(calls[0]?.body, errorResult.body);
-  assert.equal((response as { kind: string }).kind, "next-response");
+  expect(calls).toHaveLength(1);
+  expect(calls[0]?.init?.status).toBe(400);
+  expect(calls[0]?.init?.headers?.["Content-Type"]).toBe("application/json");
+  expect(calls[0]?.body).toEqual(errorResult.body);
+  expect((response as { kind: string }).kind).toBe("next-response");
 });

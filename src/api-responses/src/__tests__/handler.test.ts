@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { expect, test } from "vitest";
 
 import {
   withErrorHandler,
@@ -23,8 +22,8 @@ test("withErrorHandler returns successful results untouched", async () => {
 
   const wrapped = withErrorHandler(handler);
   const result = await wrapped(request);
-  assert.equal(result.status, 200);
-  assert.deepEqual(result.body, { data: { id: 1 } });
+  expect(result.status).toBe(200);
+  expect(result.body).toEqual({ data: { id: 1 } });
 });
 
 test("withErrorHandler supports async handlers", async () => {
@@ -34,8 +33,8 @@ test("withErrorHandler supports async handlers", async () => {
   });
 
   const result = await wrapped(request);
-  assert.equal(result.status, 201);
-  assert.deepEqual(result.body, { data: { id: 2 } });
+  expect(result.status).toBe(201);
+  expect(result.body).toEqual({ data: { id: 2 } });
 });
 
 test("withErrorHandler converts a thrown ApiError to its standardized body", async () => {
@@ -44,8 +43,8 @@ test("withErrorHandler converts a thrown ApiError to its standardized body", asy
   });
 
   const result = await wrapped(request);
-  assert.equal(result.status, 404);
-  assert.deepEqual(result.body, {
+  expect(result.status).toBe(404);
+  expect(result.body).toEqual({
     error: { code: "NOT_FOUND", message: "No such todo." },
   });
 });
@@ -57,8 +56,8 @@ test("withErrorHandler exposes details for ApiErrors that allow it", async () =>
   });
 
   const result = await wrapped(request);
-  assert.equal(result.status, 400);
-  assert.deepEqual(result.body, {
+  expect(result.status).toBe(400);
+  expect(result.body).toEqual({
     error: { code: "BAD_REQUEST", message: "Invalid input.", details: issues },
   });
 });
@@ -69,8 +68,8 @@ test("withErrorHandler converts an unexpected Error to a sanitized 500", async (
   });
 
   const result = await wrapped(request);
-  assert.equal(result.status, 500);
-  assert.deepEqual(result.body, {
+  expect(result.status).toBe(500);
+  expect(result.body).toEqual({
     error: { code: "INTERNAL", message: "An unexpected error occurred." },
   });
 });
@@ -81,8 +80,8 @@ test("withErrorHandler converts non-Error throws to a 500", async () => {
   });
 
   const result = await wrapped(request);
-  assert.equal(result.status, 500);
-  assert.deepEqual(result.body, {
+  expect(result.status).toBe(500);
+  expect(result.body).toEqual({
     error: { code: "INTERNAL", message: "An unexpected error occurred." },
   });
 });
@@ -96,8 +95,8 @@ test("withErrorHandler honors a custom statusForError override", async () => {
   );
 
   const result = await wrapped(request);
-  assert.equal(result.status, 599);
-  assert.deepEqual(result.body, { error: { code: "NOT_FOUND", message: "gone" } });
+  expect(result.status).toBe(599);
+  expect(result.body).toEqual({ error: { code: "NOT_FOUND", message: "gone" } });
 });
 
 test("the wrapped handler receives the request it was called with", async () => {
@@ -109,6 +108,6 @@ test("the wrapped handler receives the request it was called with", async () => 
 
   const req: RouteRequest = { method: "POST", path: "/todos", query: { a: "1" } };
   const result = await wrapped(req);
-  assert.equal(seen, req);
-  assert.deepEqual(result.body, { data: "/todos" });
+  expect(seen).toBe(req);
+  expect(result.body).toEqual({ data: "/todos" });
 });
