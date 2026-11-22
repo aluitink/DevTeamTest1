@@ -137,8 +137,8 @@ steps 3, 4, and 5.
 
 Port the feature to its modern location. The legacy code stays in place
 and keeps working so nothing breaks during the transition. Update any
-affected entries in the [Feature Parity Checklist](audit.md) as the ported
-behavior is verified.
+affected entries in the [Feature Parity Checklist](audit.md#feature-parity-checklist)
+as the ported behavior is verified.
 
 ### 3. Mark the feature `migrated`
 

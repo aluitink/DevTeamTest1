@@ -18,8 +18,12 @@ described below.
 All modern TypeScript code **must** be written with strict mode enabled and
 kept enabled. This is non-negotiable:
 
-- `strict: true` **must** be set in `tsconfig.json` (the modern root
-  `tsconfig.json` and any project reference). New projects must not omit it.
+- `strict: true` **must** be set in `tsconfig.json` for every modern
+  project. This applies both directly (as in `src/api-responses/tsconfig.json`)
+  and transitively, via `"extends"` of the shared `tsconfig.base.json`
+  (which sets `strict: true` and is extended by `src/lib/validation` and
+  `src/app/items`). New projects must not omit it — either set `strict: true`
+  directly or extend `tsconfig.base.json`.
 - The full set of strict-family checks applies; do **not** disable any of
   the following:
 
@@ -41,9 +45,9 @@ kept enabled. This is non-negotiable:
   untyped external data, prefer `unknown` and narrow it explicitly (see the
   Zod rules below).
 
-The CI build fails if `strict: true` is missing from the modern
-`tsconfig.json`. Treat a strict-mode build failure as a blocking review
-comment.
+The CI build fails if `strict: true` is missing from a modern project's
+`tsconfig.json` (or its extended `tsconfig.base.json`). Treat a strict-mode
+build failure as a blocking review comment.
 
 ### Zod usage patterns
 
