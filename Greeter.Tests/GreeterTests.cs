@@ -9,4 +9,16 @@ public class GreeterTests
     {
         Assert.Equal("Hello, World!", _greeter.Greet("World"));
     }
+
+    [Fact]
+    public void Greet_EmptyString_Returns_Hello_Exclamation()
+    {
+        Assert.Equal("Hello, !", _greeter.Greet(""));
+    }
+
+    [Fact]
+    public void Greet_Null_Returns_Hello_Exclamation()
+    {
+        Assert.Equal("Hello, !", _greeter.Greet(null!));
+    }
 }
