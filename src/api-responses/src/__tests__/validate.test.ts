@@ -85,7 +85,7 @@ test("validateRequest returns a RequestValidationError on failure", () => {
 test("the validation error exposes flattened, section-tagged issues as details", () => {
   const result = validateRequest(
     { params: ParamsSchema, body: BodySchema },
-    { params: { id: "" }, body: { name: "way too long name", quantity: 1 } as never },
+    { params: { id: "" }, body: { name: "", quantity: -1 } as never },
   );
 
   assert.equal(result.ok, false);
@@ -95,6 +95,7 @@ test("the validation error exposes flattened, section-tagged issues as details",
   assert.deepEqual(details, [
     { part: "params", path: "id", message: "id must not be empty" },
     { part: "body", path: "name", message: "name must not be empty" },
+    { part: "body", path: "quantity", message: "Number must be greater than or equal to 0" },
   ]);
 });
 
