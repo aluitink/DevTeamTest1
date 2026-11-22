@@ -24,7 +24,6 @@
          as well, so the spawned process can resolve all of its dependencies. -->
     <ProjectReference Include="..\Greeter\Greeter.csproj">
       <Private>true</Private>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </ProjectReference>
   </ItemGroup>
 
