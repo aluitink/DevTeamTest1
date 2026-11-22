@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { expect, test } from "vitest";
 import { z } from "zod";
 
 import {
@@ -53,9 +52,9 @@ test("invalid body yields the standardized 400 error JSON", async () => {
   };
 
   const response = jsonRouteResult(await route(request));
-  assert.equal(response.status, 400);
-  assert.equal(response.headers["Content-Type"], "application/json");
-  assert.deepEqual(JSON.parse(response.body), {
+  expect(response.status).toBe(400);
+  expect(response.headers["Content-Type"]).toBe("application/json");
+  expect(JSON.parse(response.body)).toEqual({
     error: {
       code: "BAD_REQUEST",
       message: "Request validation failed.",
@@ -74,8 +73,8 @@ test("valid body yields the standardized success JSON", async () => {
   };
 
   const response = jsonRouteResult(await route(request));
-  assert.equal(response.status, 201);
-  assert.deepEqual(JSON.parse(response.body), { data: { id: 1, title: "Ship it" } });
+  expect(response.status).toBe(201);
+  expect(JSON.parse(response.body)).toEqual({ data: { id: 1, title: "Ship it" } });
 });
 
 test("params validation composes with the handler wrapper for id routes", async () => {
@@ -88,11 +87,11 @@ test("params validation composes with the handler wrapper for id routes", async 
 
   const route = withErrorHandler(handler);
   const missing = jsonRouteResult(await route({ method: "GET", path: "/todos/x", query: {} }));
-  assert.equal(missing.status, 400);
+  expect(missing.status).toBe(400);
 
   const found = jsonRouteResult(
     await route({ method: "GET", path: "/todos/x", query: { id: "42" } }),
   );
-  assert.equal(found.status, 200);
-  assert.deepEqual(JSON.parse(found.body), { data: { id: "42" } });
+  expect(found.status).toBe(200);
+  expect(JSON.parse(found.body)).toEqual({ data: { id: "42" } });
 });

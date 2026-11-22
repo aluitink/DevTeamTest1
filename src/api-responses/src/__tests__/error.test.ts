@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { expect, test } from "vitest";
 
 import {
   errorResponse,
@@ -10,40 +9,39 @@ import {
 
 test("errorResponse produces { error: { code, message } } without details", () => {
   const result = errorResponse("NOT_FOUND", "Resource not found.");
-  assert.deepEqual(result, { error: { code: "NOT_FOUND", message: "Resource not found." } });
-  assert.equal("details" in result.error, false);
+  expect(result).toEqual({ error: { code: "NOT_FOUND", message: "Resource not found." } });
+  expect("details" in result.error).toBe(false);
 });
 
 test("errorResponse includes details when provided", () => {
   const issues = [{ path: "title", message: "required" }];
   const result = errorResponse("BAD_REQUEST", "Invalid input.", issues);
-  assert.deepEqual(result, {
+  expect(result).toEqual({
     error: { code: "BAD_REQUEST", message: "Invalid input.", details: issues },
   });
 });
 
 test("errorResponse omits details key when details is undefined but includes it for null", () => {
   const without = errorResponse("X", "msg");
-  assert.equal("details" in without.error, false);
+  expect("details" in without.error).toBe(false);
 
   const withNull = errorResponse("X", "msg", null);
-  assert.ok("details" in withNull.error);
-  assert.equal(withNull.error.details, null);
+  expect("details" in withNull.error).toBe(true);
+  expect(withNull.error.details).toBe(null);
 });
 
 test("errorResponseFromDetails wraps an existing details object", () => {
   const result = errorResponseFromDetails({ code: "C", message: "m", details: 5 });
-  assert.deepEqual(result, { error: { code: "C", message: "m", details: 5 } });
+  expect(result).toEqual({ error: { code: "C", message: "m", details: 5 } });
 });
 
 test("getErrorCode reads code from a response body or raw details object", () => {
-  assert.equal(getErrorCode({ error: { code: "A", message: "m" } }), "A");
-  assert.equal(getErrorCode({ code: "B", message: "m" }), "B");
+  expect(getErrorCode({ error: { code: "A", message: "m" } })).toBe("A");
+  expect(getErrorCode({ code: "B", message: "m" })).toBe("B");
 });
 
 test("errorResponseBody serializes to the exact JSON shape", () => {
-  assert.equal(
+  expect(
     errorResponseBody(errorResponse("NOT_FOUND", "nope")),
-    '{"error":{"code":"NOT_FOUND","message":"nope"}}',
-  );
+  ).toBe('{"error":{"code":"NOT_FOUND","message":"nope"}}');
 });
