@@ -29,11 +29,57 @@ it is not an HTTP endpoint.
 
 ## Database Entities
 
-_To be filled in._
+None. The repository has no data persistence layer.
+
+- There are no ORM entities, POCO models mapped to database tables, or
+  EF Core `DbContext` classes.
+- No connection strings, migration files, or `.sql`/schema files exist.
+- No files are read from or written to disk; the only input is an optional
+  command-line argument and the only output is a single line printed to
+  standard output.
+
+The only types defined in the codebase are:
+
+| Type | Kind | Fields | Relationships | File |
+| --- | --- | --- | --- | --- |
+| `Greeter.Greeter` | Plain class (not an entity) | none (stateless) | none | `Greeter/Greeter.cs` |
+| `Program` | Static console entry point | `_greeter` (static field, `Greeter.Greeter`) | references `Greeter.Greeter` in-process | `hello/Program.cs` |
+
+No migrations exist.
 
 ## Third-Party Dependencies
 
-_To be filled in._
+All external packages are NuGet packages (no `package.json`,
+`requirements.txt`, `go.mod`, etc.). They appear only in the two test
+projects; the `Greeter` library and `hello` console app reference no
+external packages at all.
+
+### Test framework & tooling
+
+| Package | Version | Used in | Category | Purpose |
+| --- | --- | --- | --- | --- |
+| `xunit` | 2.9.3 | `Greeter.Tests`, `hello.Tests` | Testing | xUnit unit-testing framework (assertions, test discovery attributes). |
+| `xunit.runner.visualstudio` | 3.1.4 | `Greeter.Tests`, `hello.Tests` | Testing | Adapter that runs xUnit tests under the VSTest runner (e.g. `dotnet test`). |
+| `Microsoft.NET.Test.Sdk` | 17.14.1 | `Greeter.Tests`, `hello.Tests` | Testing | Microsoft test platform (VSTest) SDK that hosts and reports test execution. |
+| `coverlet.collector` | 6.0.4 | `Greeter.Tests`, `hello.Tests` | Testing / coverage | Collects code-coverage data (e.g. via VS/VS Code coverage tools) when tests run. |
+
+### Framework
+
+Both test projects and the application target the **.NET 10**
+(`net10.0`) shared framework, supplied by the runtime/SDK rather than as a
+package reference.
+
+### Internal project references (not third-party, listed for completeness)
+
+| Reference | Referenced by | Purpose |
+| --- | --- | --- |
+| `Greeter` (project) | `hello`, `Greeter.Tests`, `hello.Tests` (transitively) | The greeting library under test. |
+| `hello` (project) | `hello.Tests` | The console app, referenced by integration tests to build/copy its output assembly. |
+
+### Package sources
+
+`NuGet.Config` uses `nuget.org` (`https://api.nuget.org/v3/index.json`) and
+stores the global package cache at `/workspace/nuget/packages`.
 
 ## UI Components
 
