@@ -8,18 +8,25 @@ special rules for migration-related work.
 
 ## Modern Technology Stack
 
-New (modern) code lives under `src/` (for example `src/hello/`,
-`src/migration/`). Legacy code (`Greeter/`, `hello/`) stays in place during
-the transition and must not be deleted except through the migration workflow
-described below.
+New (modern) code lives under `src/` (for example `src/migration/`
+— the .NET project that owns the migration status definitions). Legacy code
+(`Greeter/`, `hello/`) stays in place during the transition and must not be
+deleted except through the migration workflow described below.
+
+The stack conventions below are mandatory for all **modern TypeScript**
+projects added under `src/` going forward. No such project exists in the
+repository yet — the only project under `src/` today is the .NET migration
+library — but every new TypeScript project must conform from day one.
 
 ### TypeScript strict mode is mandatory
 
 All modern TypeScript code **must** be written with strict mode enabled and
 kept enabled. This is non-negotiable:
 
-- `strict: true` **must** be set in `tsconfig.json` (the modern root
-  `tsconfig.json` and any project reference). New projects must not omit it.
+- `strict: true` **must** be set in `tsconfig.json` for every modern
+  TypeScript project, either directly in the project's own
+  `tsconfig.json` or transitively, via `"extends"` of a shared base config
+  that itself sets `strict: true`. New projects must not omit it.
 - The full set of strict-family checks applies; do **not** disable any of
   the following:
 
@@ -41,9 +48,9 @@ kept enabled. This is non-negotiable:
   untyped external data, prefer `unknown` and narrow it explicitly (see the
   Zod rules below).
 
-The CI build fails if `strict: true` is missing from the modern
-`tsconfig.json`. Treat a strict-mode build failure as a blocking review
-comment.
+A modern TypeScript project whose `tsconfig.json` (or its extended base
+config) is missing `strict: true` must not be merged, and reviewers must
+treat a strict-mode build failure as a blocking review comment.
 
 ### Zod usage patterns
 
@@ -179,8 +186,10 @@ dotnet build DevTeamTest1.slnx
 dotnet test DevTeamTest1.slnx
 ```
 
-For modern TypeScript projects, `npm run build` must succeed with
-`strict: true` enabled and `npm test` must pass before a PR is submitted.
+For modern TypeScript projects (none exist in the repository yet — see the
+[Modern Technology Stack](#modern-technology-stack) section), `npm run build`
+must succeed with `strict: true` enabled and `npm test` must pass before a
+PR is submitted.
 
 ## Questions?
 
