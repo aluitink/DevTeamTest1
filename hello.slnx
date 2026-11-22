@@ -3,4 +3,6 @@
   <Project Path="Greeter.Tests/Greeter.Tests.csproj" />
   <Project Path="hello.Tests/hello.Tests.csproj" />
   <Project Path="hello/hello.csproj" />
+  <Project Path="src/migration/migration.csproj" />
+  <Project Path="src/migration.Tests/migration.Tests.csproj" />
 </Solution>
