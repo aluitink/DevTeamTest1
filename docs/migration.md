@@ -13,6 +13,10 @@ Related documents:
 - [Migration Statuses](migration/statuses.md) — the lifecycle states
   (`migrated`, `deprecated`, `dropped`) and their definitions, with the
   canonical source of truth in `src/migration/MigrationStatuses.cs`.
+- [Codebase Audit](audit.md) — the feature inventory, with the
+  [Feature Parity Checklist](audit.md#feature-parity-checklist) that
+  verifies the ported behavior (see
+  [Migration Workflow, step 2](#2-implement-the-modern-code)).
 
 ## Current Status
 
@@ -24,7 +28,7 @@ is planned or begun.
 
 | Feature Name | Legacy Location | Modern Location | Current Status | Date Updated | Responsible Owner | Justification/Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| _(example)_ Greeting | `Greeter/Greeter.cs` | `src/hello/` | migrated | 2026-01-01 | _(TBD)_ | Example row — replace with real entries. |
+| Greeting | `Greeter/Greeter.cs` | `src/hello/` | migrated | 2026-01-01 | _(TBD)_ | _(example row — replace with real entries)_ |
 
 **Column descriptions:**
 

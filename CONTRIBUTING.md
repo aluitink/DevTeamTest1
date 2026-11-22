@@ -8,8 +8,10 @@ special rules for migration-related work.
 
 ## Modern Technology Stack
 
-New (modern) code lives under `src/` (for example `src/hello/`,
-`src/migration/`). Legacy code (`Greeter/`, `hello/`) stays in place during
+New (modern) code lives under `src/` (for example `src/migration/`
+— the .NET project that owns the migration status definitions — and the
+TypeScript projects `src/lib/validation`, `src/api-responses`,
+`src/app/items`). Legacy code (`Greeter/`, `hello/`) stays in place during
 the transition and must not be deleted except through the migration workflow
 described below.
 
