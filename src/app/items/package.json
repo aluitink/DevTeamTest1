@@ -1,0 +1,62 @@
+{
+  "name": "@devteamtest1/app-items",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Reference implementation of the React Server Component data fetching pattern for Next.js App Router (task #75): fetch in a Server Component, validate at the boundary with Zod, cache with revalidation, render typed data.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./data": {
+      "types": "./dist/data/index.d.ts",
+      "import": "./dist/data/index.js",
+      "default": "./dist/data/index.js"
+    },
+    "./lib": {
+      "types": "./dist/lib/index.d.ts",
+      "import": "./dist/lib/index.js",
+      "default": "./dist/lib/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.react-server.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:react-server": "tsc -p tsconfig.react-server.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@devteamtest1/validation": "*"
+  },
+  "peerDependencies": {
+    "next": ">=14.0.0",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.10",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

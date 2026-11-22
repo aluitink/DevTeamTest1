@@ -1,0 +1,16 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "paths": {
+      "next": ["../../../node_modules/stubs/next"],
+      "react": ["../../../node_modules/stubs/react"],
+      "react-dom": ["../../../node_modules/stubs/react-dom"]
+    }
+  },
+  "include": ["src/**/*.tsx", "src/**/*.ts"]
+}
