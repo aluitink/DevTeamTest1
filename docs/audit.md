@@ -83,7 +83,43 @@ stores the global package cache at `/workspace/nuget/packages`.
 
 ## UI Components
 
-_To be filled in._
+None. This repository is a .NET 10 **console application**; it contains no
+graphical or web UI, no UI framework (WinForms, WPF, Blazor, ASP.NET Core
+MVC/Razor, MAUI, Avalonia, etc.), and no frontend assets (no `.razor`,
+`.cshtml`, `.xaml`, `.html`, `.css`, or `.js` files).
+
+### Identified components
+
+There are **no reusable UI components** to document — no buttons, forms,
+cards, modals, views, or widgets exist anywhere in the codebase. The only
+"interface" is plain text written to the console:
+
+| Component | Kind | File | Description |
+| --- | --- | --- | --- |
+| *(none)* | — | — | No UI components exist. |
+
+### Interactivity
+
+There is no user interaction beyond the command line:
+
+- **Input:** an optional single command-line argument (`args[0]`) read once
+  at startup by `Program.Main(string[] args)` in `hello/Program.cs`. There
+  are no click handlers, key bindings, form submissions, or event
+  subscriptions.
+- **State changes:** the only state is a `static readonly` `Greeter.Greeter`
+  field (a stateless string formatter). No reactive state, view models, or
+  observable properties exist.
+- **Output:** a single line (`"Hello, {name}!"`, or `"Hello, World!"` when no
+  argument is supplied) printed via `Console.WriteLine`.
+- **API calls triggered:** none. `Greet` is called in-process; no HTTP
+  client, WebSocket, or other network calls are made, and no side effects
+  (file I/O, database writes) occur.
+- **Process lifetime:** the process runs `Main` once and exits immediately;
+  there is no event loop, message pump, or window lifecycle.
+
+The test suite (`HelloAppIntegrationTests`) exercises this "interface" by
+launching the compiled console app as a subprocess and asserting on its
+stdout; it confirms the only observable behavior is the greeting text line.
 
 ## Existing Tests
 
