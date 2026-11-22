@@ -170,4 +170,52 @@ disabled (`[Fact(Skip = ...)]`), or failing tests.
 
 ## Feature Parity Checklist
 
-_To be filled in._
+Synthesized from the audits of routes, API endpoints, database entities,
+third-party dependencies, UI components, and existing tests. Because this
+repository is a small .NET 10 console application, the "features" are
+limited to the console program's behavior, the `Greeter` library, and the
+test/tooling surface. Every checkbox is intentionally **unchecked** so the
+list can be used to track functionality as the codebase is refactored —
+tick a box once the feature is verified to behave identically after the
+change.
+
+### Core greeting functionality
+
+- [ ] `Greeter.Greet(string name)` returns `"Hello, {name}!"` for a normal (non-empty) name
+- [ ] `Greeter.Greet(string name)` returns `"Hello, !"` when passed an empty string
+- [ ] `Greeter.Greet(string name)` returns `"Hello, !"` when passed `null`
+- [ ] `Greeter` remains a stateless class with no fields or dependencies
+
+### Console application behavior (`hello`)
+
+- [ ] `Program.Main(string[] args)` is the application entry point
+- [ ] With a single command-line argument, the app prints `Hello, {arg}!` to stdout
+- [ ] With no command-line arguments, the app prints `Hello, World!` to stdout
+- [ ] Output is written to standard output (stdout) only; nothing is written to stderr on success
+- [ ] The process exits with exit code `0` for the above invocations
+- [ ] The `hello` app references and uses the `Greeter` library in-process
+
+### API surface
+
+- [ ] The only public programmatic interface remains `string Greet(string name)` in `Greeter/Greeter.cs`
+- [ ] No HTTP/network endpoints are introduced or removed (none exist)
+
+### Data & persistence
+
+- [ ] No data persistence layer is introduced or removed (none exist)
+- [ ] The program performs no file reads or writes
+
+### UI / presentation
+
+- [ ] No UI framework or components exist or are introduced (none exist)
+- [ ] Output remains plain text on the console
+
+### Testing & tooling
+
+- [ ] `Greeter.Tests` unit tests (3) continue to pass after refactoring
+- [ ] `hello.Tests` unit tests (2) continue to pass after refactoring
+- [ ] `hello.Tests` integration tests (2, subprocess-based) continue to pass after refactoring
+- [ ] xUnit / VSTest / Coverlet test stack and versions remain compatible
+- [ ] Full suite (`dotnet test DevTeamTest1.slnx`) passes: 0 failed, 4 passed (plus the 3 Greeter.Tests)
+- [ ] Project references are preserved: `hello` → `Greeter`, `hello.Tests` → `hello`, `Greeter.Tests` → `Greeter`
+- [ ] Both application projects target `net10.0`
