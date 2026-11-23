@@ -18,49 +18,48 @@
 # All apt installs are non-interactive (DEBIAN_FRONTEND=noninteractive) so the
 # container builds cleanly in CI without a TTY.
 
-# ---- Base layer 1: Node 20.x LTS (Debian bookworm-slim) ---------------------
-FROM node:20.19-bookworm-slim AS node-base
-
-# ---- Base layer 2: .NET SDK 10.0 (Ubuntu noble, non-root user "dotnet") -----
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS dotnet-base
-
-FROM dotnet-base
+# ---- Base image: .NET SDK 10.0 (Ubuntu noble, ships as non-root "dotnet") ----
+# Node.js is installed from the official NodeSource 20.x LTS apt repository,
+# which provides native Ubuntu noble packages. This keeps the whole container
+# on a single distro/toolchain (no cross-distro binary mixing) while pinning
+# Node 20.x LTS to match CI (`actions/setup-node@v4`, `node-version: 20`) and
+# the strictest transitive `engines` range (`^20.19.0 || ^22.13.0 || >=24`).
+#
+# The container keeps the dotnet SDK image's default non-root `dotnet` user.
+# devcontainer.json sets `remoteUser: "root"` with a documented reason: the
+# host bind-mounts the repository (usually uid 1000) onto /workspace, and a
+# uid-mismatch between the host user and the `dotnet` user can make writes
+# under /workspace (obj/, bin/, node_modules/) fail with EACCES on some
+# machines. devcontainer.json additionally normalizes ownership in
+# postCreateCommand so every host user works out of the box.
+FROM mcr.microsoft.com/dotnet/sdk:10.0
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Install the Node.js 20.x LTS toolchain (node + npm 10.x) from the official
-# nodejs.org image. Pinned to 20.19+ so the container matches CI
-# (`actions/setup-node@v4`, `node-version: 20`) and stays inside the strictest
-# transitive `engines` range (`^20.19.0 || ^22.13.0 || >=24`).
-#
-# The `node:` image ships `npm` as a symlink into /usr/local/lib/node_modules,
-# so the whole npm package tree is copied (not the symlink); `corepack` is
-# deliberately dropped because npm is the only supported package manager for
-# this repo (docs/package-manager-decision.md).
-COPY --from=node-base /usr/local/bin/node /usr/local/bin/
-COPY --from=node-base /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
-RUN rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
-    && ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
-    && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
-    && node --version \
-    && npm --version
-
-# System tooling:
+# Install the Node.js 20.x LTS toolchain (node + npm 10.x, as packaged by
+# NodeSource for Ubuntu noble) plus system tooling:
 #   - ca-certificates, curl, git, tzdata: parity with .devteam/Dockerfile
 #     (source control + CI parity, network access, general tooling);
+#   - gnupg: one-shot use to fetch and sign the NodeSource repository keyring;
 #   - build-essential + python3: native build toolchain (insurance for
 #     node-gyp packages / esbuild source builds; see DEVCONTAINER_NOTES.md).
-# All flags are non-interactive.
+# All flags are non-interactive; the NodeSource setup script is run with
+# DEBIAN_FRONTEND=noninteractive (no tzdata prompt).
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        --allow-unauthenticated \
         ca-certificates \
         curl \
         git \
         tzdata \
         build-essential \
         python3 \
-    && rm -rf /var/lib/apt/lists/*
+        gnupg \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/* \
+    && node --version \
+    && npm --version \
+    && dotnet --version
 
 # Keep agent runs quiet and hermetic (no first-run experience, no telemetry),
 # matching .devteam/Dockerfile and .env.example.
@@ -73,6 +72,10 @@ ENV DOTNET_NOLOGO=1 \
 # Pre-warm the global NuGet cache with the exact package versions the
 # solution restores (plus the SDK's own tooling packages), so agent builds are
 # fast and work even with limited network access (parity with .devteam/Dockerfile).
+# NUGET_PACKAGES is intentionally /tmp/.nuget here AND in devcontainer.json, so
+# the pre-warmed cache is reused at runtime (the verify script's env-file
+# override in CI also points at /workspace/nuget/packages, which is fine for
+# the smoke test).
 RUN mkdir -p /tmp/warm && cd /tmp/warm \
     && dotnet new console -n warm -o warm --framework net10.0 \
     && cd warm \

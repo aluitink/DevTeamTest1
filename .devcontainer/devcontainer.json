@@ -6,23 +6,20 @@
   },
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
   "workspaceFolder": "/workspace",
+  "remoteUser": "root",
   "containerEnv": {
     "DEBIAN_FRONTEND": "noninteractive",
     "DOTNET_NOLOGO": "1",
     "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
     "DOTNET_SKIP_FIRST_TIME_EXPERIENCE": "1",
-    "NUGET_PACKAGES": "/workspace/nuget/packages",
+    "NUGET_PACKAGES": "/tmp/.nuget",
     "NUGET_XMLDOC_MODE": "skip"
   },
-  "features": {
-    "ghcr.io/devcontainers/features/git:1": {}
-  },
-  "postCreateCommand": "git --version && node --version && npm --version && (npm ci --no-audit --no-fund 2>/dev/null || npm install --no-audit --no-fund)",
+  "postCreateCommand": "git --version && node --version && npm --version && npm ci --no-audit --no-fund",
   "customizations": {
     "vscode": {
       "extensions": [
-        "dbaeumer.vscode-eslint",
-        "ms-vscode.vscode-typescript-next"
+        "dbaeumer.vscode-eslint"
       ],
       "settings": {
         "npm.scriptRunner": "npm",
