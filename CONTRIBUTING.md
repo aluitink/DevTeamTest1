@@ -203,6 +203,25 @@ dotnet test DevTeamTest1.slnx
 For modern TypeScript projects, `npm run build` must succeed with
 `strict: true` enabled and `npm test` must pass before a PR is submitted.
 
+### Verifying the dev container environment
+
+Before pushing a container-affecting change, run the dev-container
+smoke test to verify a healthy environment locally:
+
+```bash
+scripts/devcontainer-verify.sh
+```
+
+The script is fully non-interactive (requires `docker` or `podman`). It
+builds and starts a fresh dev container from the shared container
+configuration, installs dependencies (`npm ci`), and then runs the four
+root `package.json` scripts in order: `build`, `test`, `lint`, and
+`type-check`. It exits non-zero and names the failing step if anything
+breaks.
+
+CI runs this same script on every pull request that touches
+`.devcontainer/`, `package-lock.json`, or the root `package.json`.
+
 ## Questions?
 
 If you are unsure about migration status, ownership, or a past decision,
