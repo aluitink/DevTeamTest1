@@ -35,3 +35,43 @@ jobs:
 
       - name: Type check
         run: npm run type-check
+
+  devcontainer-verify:
+    name: Verify dev container (scripts/devcontainer-verify.sh)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # fetch-depth: 0 so the PR base and head SHAs are both available
+          # locally for the path-gate diff below.
+          fetch-depth: 0
+
+      - name: Gate on container/manifest path changes (PRs)
+        id: path-gate
+        if: github.event_name == 'pull_request'
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.sha }}
+          BASE_REF: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          # Files changed by this PR (base..head).
+          changed="$(git diff --name-only "${BASE_REF}" "${HEAD_REF}")"
+
+          # Match the trigger set:
+          #   .devcontainer/**, .devteam/** (Dockerfile), the lockfile,
+          #   and the root package.json.
+          if printf '%s\n' "${changed}" | grep -Eq '(^|/)(\.devcontainer/|\.devteam/)|^package-lock\.json$|^package\.json$'; then
+            echo "devcontainer-changed=true" >> "${GITHUB_OUTPUT}"
+            echo "Container/manifest path changed — running devcontainer verification."
+          else
+            echo "devcontainer-changed=false" >> "${GITHUB_OUTPUT}"
+            echo "No container/manifest path changed — skipping devcontainer verification."
+          fi
+
+      - name: Run devcontainer verification script
+        if: github.event_name != 'pull_request' || steps.path-gate.outputs.devcontainer-changed == 'true'
+        run: |
+          set -euo pipefail
+          bash scripts/devcontainer-verify.sh
