@@ -6,6 +6,12 @@ version, package manager + version, workspace layout, native modules,
 required system packages, and the canonical install/build/test/lint/
 type-check commands.
 
+> **Verification status.** Every claim below was re-checked against the
+> actual repository files (see the [Verification log](#verification-log) at
+> the end, which maps each claim to the exact file / line that was read).
+> Where a claim was originally attributed loosely, it has been corrected in
+> place and the correction is flagged.
+
 ## Node version
 
 | Source | Value |
@@ -18,9 +24,11 @@ type-check commands.
 **Conclusion: Node.js 20.x LTS** (e.g. 20.19+). This satisfies the
 "20.x or 22.x LTS" requirement — Node 20 is in the maintenance-LTS phase
 (22.x is active LTS and also acceptable). CI is the single source of truth;
-the devcontainer should pin Node 20.x to match. The strongest `engines`
-range found in the dependency tree (e.g. `@types/node`-related tooling) is
-`^20.19.0 || ^22.13.0 || >=24`, so 20.x must be a current 20.19+ release.
+the devcontainer should pin Node 20.x to match. The strictest `engines`
+range found in the resolved dependency tree (declared by
+`eslint-visitor-keys@5.0.1`, a transitive `@typescript-eslint` dependency in
+`package-lock.json`) is `^20.19.0 || ^22.13.0 || >=24`, so a 20.x pin should
+be a current 20.19+ release to stay within range.
 
 ## Package manager + version
 
@@ -176,3 +184,43 @@ npm test --prefix src/app/items
 dotnet build DevTeamTest1.slnx
 dotnet test DevTeamTest1.slnx
 ```
+
+## Verification log
+
+Each claim above was confirmed by reading the listed file(s). Line numbers
+are as of this analysis and are given to make re-verification mechanical.
+
+| # | Claim | Verified in | Evidence |
+| --- | --- | --- | --- |
+| 1 | `.nvmrc` does not exist | repo root listing | `ls .nvmrc` → `No such file or directory` |
+| 2 | No `engines` field in any of the four `package.json`s | `package.json`, `src/lib/validation/package.json`, `src/api-responses/package.json`, `src/app/items/package.json` | `grep '"engines"'` across all four returns nothing |
+| 3 | No `packageManager` field (no corepack pin) | same four `package.json`s | `grep '"packageManager"'` returns nothing |
+| 4 | CI pins Node 20 via `actions/setup-node@v4`, `cache: 'npm'` | `.github/workflows/ci.yml` | lines 17–21 (`node-version: 20`, `cache: 'npm'`) |
+| 5 | CI installs with `npm ci` (fallback `npm install`) | `.github/workflows/ci.yml` | lines 23–31 |
+| 6 | CI enforces `npm run lint` then `npm run type-check` | `.github/workflows/ci.yml` | lines 33–37 |
+| 7 | Root `workspaces` = `src/lib/validation` + `src/api-responses` only | `package.json` | lines 7–10 |
+| 8 | `package-lock.json` is the only lockfile, `lockfileVersion: 3` | `package-lock.json`; absence of `pnpm-lock.yaml` / `yarn.lock` | head of file (line 4); `ls pnpm-lock.yaml yarn.lock` → both missing |
+| 9 | `@devteamtest1/validation` name / `zod` runtime dep / `build`, `typecheck`, `test` scripts | `src/lib/validation/package.json` | lines 2, 30, 24–28 |
+| 10 | `api-responses` name / `zod` runtime dep / `build`, `typecheck`, `test` scripts | `src/api-responses/package.json` | lines 2, 20, 10–13 |
+| 11 | `@devteamtest1/app-items` is **not** in `workspaces`; dep `@devteamtest1/validation: *`; optional `next`/`react`/`react-dom` peer deps; `build` runs two `tsc` configs; `typecheck` + `typecheck:react-server` scripts | `src/app/items/package.json` | lines 2, 36–43, 31–34; absence from `package.json` `workspaces` and from `package-lock.json` (`grep` for `app-items` returns nothing) |
+| 12 | Root `next`/`react`/`react-dom` + `eslint-config-next` are root devDependencies; root scripts `build`/`test`/`lint`/`type-check` | `package.json` | lines 11–16, 17–28 |
+| 13 | Root eslint extends `next/core-web-vitals` | `eslint.config.mjs` | line 9 |
+| 14 | Exactly two `hasInstallScript` packages: `esbuild@0.21.5` and `fsevents@2.3.3` | `package-lock.json` | `grep -c 'hasInstallScript'` → `2`; entries at lines 2969–2971 (`esbuild`, `version 0.21.5`) and 3636–3644 (`fsevents`, `optional: true`, `os: [darwin]`) |
+| 15 | `esbuild` ships prebuilt binaries as optional platform deps (e.g. `@esbuild/linux-x64`) → no C/C++ compile on linux-x64 | `package-lock.json` | `@esbuild/{aix-arm64,android-arm,…,linux-x64,…}` optional-dep entries with per-platform `os`/`cpu` fields (entries start at line 31 and continue through the linux-* and win32-* blocks, with `@esbuild/linux-x64` at line 303); the linux-x64 entry carries only an optional-dep `os`/`cpu` gate, no `hasInstallScript` |
+| 16 | No node-gyp/native packages (`sharp`, `sqlite`, `better-sqlite3`, `node-gyp`, `bcrypt`) anywhere in the tree | `package-lock.json` | `grep -iE 'node_modules/(sharp|sqlite|better-sqlite3|node-gyp|bcrypt)'` → no matches |
+| 17 | Strictest `engines` range `^20.19.0 \|\| ^22.13.0 \|\| >=24` comes from `eslint-visitor-keys@5.0.1` (transitive) | `package-lock.json` | lines 1631–1639 (package name at 1632, `engines.node` at 1638) |
+| 18 | `vitest@2.1.9` is the resolved test runner (dev, via workspaces) | `package-lock.json` | lines 6476–6477 |
+| 19 | `.devteam/Dockerfile` is `mcr.microsoft.com/dotnet/sdk:10.0`, installs only `ca-certificates`, `curl`, `git`, `tzdata`; **no Node.js layer** | `.devteam/Dockerfile` | lines 8 and 13–19 |
+| 20 | .NET projects are not npm workspaces; managed by `DevTeamTest1.slnx` / `hello.slnx` + NuGet | `DevTeamTest1.slnx`, `hello.slnx`, `NuGet.Config`; absence of any `*.csproj` reference in `package.json` | solution files present at repo root; `package.json` has no C# references |
+| 21 | README documents Node 20.x + npm 10.x prerequisites and the `npm ci` / `npm run build` / `npm test` / `dotnet build DevTeamTest1.slnx` / `dotnet test DevTeamTest1.slnx` canonical commands | `README.md` | Prerequisites table (lines 38–42); Build (lines 81–94); Run the tests (lines 113–128) |
+
+### Corrections made during verification
+
+- **Node `engines` attribution (item 17).** An earlier draft of these notes
+  described the `^20.19.0 || ^22.13.0 || >=24` range as coming from
+  "`@types/node`-related tooling." The actual declaring package is
+  `eslint-visitor-keys@5.0.1` (a transitive dependency of
+  `@typescript-eslint`). The range itself was correct; the attribution was
+  not. The Node-version conclusion (pin 20.19+) is unaffected.
+
+All other claims verified as originally stated with no correction required.
