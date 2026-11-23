@@ -1,0 +1,28 @@
+{
+  "name": "@devteamtest1/app",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Next.js App Router `app/` directory (task #74): items CRUD API route handlers built on the api-responses helpers, @devteamtest1/validation schemas, and the placeholder items service.",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@devteamtest1/app-items": "*",
+    "@devteamtest1/validation": "*",
+    "api-responses": "*"
+  },
+  "peerDependencies": {
+    "next": ">=14.0.0"
+  },
+  "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.10",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
