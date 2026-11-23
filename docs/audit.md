@@ -342,3 +342,112 @@ directly inside the agent's container on 2026-11-23.
    `NUGET_PACKAGES=/workspace/.nuget` (the Dockerfile default was
    `/tmp/.nuget`); the env var wins at runtime, so the in-repo path is
    currently unused. Minor inconsistency, documented for completeness.
+
+## Docker / Container Definitions & Image References (Task #138)
+
+Audit of every container definition and image reference in the repository
+and its CI/CD configuration (task #138, parent #122). Full sweep of the
+entire tree on `main` (HEAD `159f886`), all remote branches, and tags, for
+Dockerfiles, docker-compose files, Containerfiles, Kaniko/Buildpacks/
+`nix-docker` configs, `.devcontainer/` directories, inline/heredoc
+Dockerfiles in shell scripts, and container directives in CI.
+
+### Findings
+
+**1. The in-repo dev-container definition: `.devteam/Dockerfile`**
+
+- The development container is **defined in-repo** at the non-conventional
+  path **`.devteam/Dockerfile`** (header comment: "Shared development
+  environment for all developer agents"). Conventional paths — `Dockerfile`
+  at root, `docker-compose.yml/.yaml`, `.docker/dev.Dockerfile`,
+  `.devcontainer/`, `Containerfile` — do **not** exist on `main`.
+- **Base image:** `mcr.microsoft.com/dotnet/sdk:10.0` (the only `FROM`
+  line; upstream source is Microsoft's official .NET SDK image on the
+  Microsoft Container Registry, `mcr.microsoft.com`).
+- Content: installs `ca-certificates`, `curl`, `git`, `tzdata` via apt;
+  sets `DOTNET_NOLOGO`, `DOTNET_CLI_TELEMETRY_OPTOUT`,
+  `DOTNET_SKIP_FIRST_TIME_EXPERIENCE`, `NUGET_PACKAGES=/tmp/.nuget`,
+  `NUGET_XMLDOC_MODE=skip`; pre-warms the NuGet cache with
+  `Microsoft.NET.Test.Sdk 17.14.1`, `xunit 2.9.3`,
+  `xunit.runner.visualstudio 3.1.4`, `coverlet.collector 6.0.4`;
+  `WORKDIR /workspace`. No `USER`, no `ENTRYPOINT`/`CMD` — the repo is
+  bind-mounted at runtime by the orchestrator and nothing is `COPY`'d in.
+- The image is **never built by anything in the repo** and is not pushed to
+  a registry; it is built by the external agent orchestrator from this
+  Dockerfile (see the "Agent Development Environment" section above for
+  runtime evidence: `DOTNET_RUNNING_IN_CONTAINER=true`, repo mounted at
+  `/workspace/repo`, orchestrator-injected `GH_TOKEN`/git identity).
+- Branches: present and **byte-identical** on `main`,
+  `origin/feature/21-set-up-the-development-environment-devte`,
+  `origin/feature/116-audit-current-agent-dev-environment-cont`, and
+  `origin/feature/107-create-the-container-smoke-test-verifica`.
+  Introduced in commit `34e2eb3` / `5fd886e` ("Set up the development
+  environment (.devteam/Dockerfile) (#21)"). No other branch, tag, or
+  commit anywhere in the repo's history adds or modifies a Dockerfile.
+
+**2. Reference from a smoke-test script: `scripts/devcontainer-verify.sh`**
+
+- Builds and runs the container for a non-interactive smoke test
+  (created in #107). It looks for `.devcontainer/devcontainer.json`
+  first, **falls back to `.devteam/Dockerfile`** (which is what exists),
+  then runs `npm ci` + the root `build`, `test`, `lint`, `type-check`
+  scripts inside the container via `docker` or `podman`.
+- Creates a **local-only, ephemeral image tag**
+  `devteamtest1-devcontainer-verify:<epoch-seconds>` (with label
+  `devteamtest1.verify=smoke-test`); this tag is never pushed or referenced
+  anywhere else. No other image tags appear in the script.
+- Referenced only by the script itself; it is **not wired into any CI
+  job**.
+
+**3. CI/CD configuration: `.github/workflows/ci.yml`**
+
+- The only CI file in the repo. **No container references of any kind**:
+  no `docker build`/`docker pull`/`docker run`, no image tags/digests,
+  no `container:` directives, no job-level `image:` fields. The single
+  `build` job uses the GitHub-hosted runner
+  (`runs-on: ubuntu-latest`) plus `actions/checkout@v4` and
+  `actions/setup-node@v4` (`node-version: 20`, `cache: 'npm'`).
+- No other CI/CD systems are present: no `.gitlab-ci.yml`, `Jenkinsfile`,
+  `azure-pipelines.yml`, `buildkite.yml`, `.circleci/`, `bitbucket-pipelines.yml`.
+
+**4. Documentation references (no definitions, no additional tags)**
+
+- `README.md` (§Environment variables): points to `.devteam/Dockerfile` as
+  the "shared development image" and documents the agent env vars
+  (`NUGET_PACKAGES=/workspace/nuget/packages` etc. — runtime value, differs
+  from the Dockerfile default `/tmp/.nuget`; documented in the #116
+  findings above).
+- `docs/audit.md` (§Agent Development Environment & Container/Runtime,
+  task #116): runtime evidence of the Docker container and the
+  `mcr.microsoft.com/dotnet/sdk:10.0` base image.
+- `.env.example`: documents the same agent env vars; no image tags.
+
+**5. Negative results (searched and not found, all branches)**
+
+- No `Dockerfile`/`*.Dockerfile`/`Containerfile` anywhere except
+  `.devteam/Dockerfile`; no `docker-compose*.yml/.yaml`; no
+  `.devcontainer/` directory or `devcontainer.json`; no Kaniko, Buildpacks,
+  or `nix-docker` configs; no inline/heredoc `docker build` Dockerfiles in
+  shell scripts (the only shell script is `scripts/devcontainer-verify.sh`,
+  which references the file-based Dockerfile); no `scripts/`, `infra/`,
+  `deploy/`, or `.ci/` directories; no registry pushes (`docker push`),
+  no pinned digests, and no externally-pulled image tags in CI.
+- No tags exist in the repo (no container definitions hide on tags).
+- No Node image or any other registry reference beyond the single
+  `mcr.microsoft.com/dotnet/sdk:10.0` base image.
+
+### Summary table
+
+| # | Path | Kind | Image tag / digest | Referenced by | Branches |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `.devteam/Dockerfile` | Dockerfile (in-repo dev-container definition) | base: `mcr.microsoft.com/dotnet/sdk:10.0`; the built image itself has no in-repo tag (built by the external agent orchestrator) | orchestrator (not in-repo); `scripts/devcontainer-verify.sh` fallback; `README.md`; `docs/audit.md` | `main` + 3 feature branches (identical) |
+| 2 | `scripts/devcontainer-verify.sh` | shell script building/running the container | local ephemeral tag `devteamtest1-devcontainer-verify:<epoch>` (never pushed) | the script itself (manual smoke test; not in CI) | `main` + `feature/107-*` branch |
+| 3 | `.github/workflows/ci.yml` | GitHub Actions CI | none (no container/image references; GitHub-hosted runner) | CI (push/PR to `main`) | `main` |
+
+Conclusion: the development container **is** defined in this repository, at
+the non-standard path `.devteam/Dockerfile` (base image
+`mcr.microsoft.com/dotnet/sdk:10.0`). It is not built or consumed by any
+in-repo CI; the in-repo consumers are the manual smoke-test script
+`scripts/devcontainer-verify.sh` (local-only image tag) and documentation.
+No externally-pulled, pre-published dev image tag is referenced anywhere —
+the image is always built from this Dockerfile by the external orchestrator.
