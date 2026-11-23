@@ -15,7 +15,7 @@
     "NUGET_PACKAGES": "/tmp/.nuget",
     "NUGET_XMLDOC_MODE": "skip"
   },
-  "postCreateCommand": "git --version && node --version && npm --version && npm ci --no-audit --no-fund",
+  "postCreateCommand": "git --version && node --version && npm --version && npm ci --no-audit --no-fund && chown -R \"$(id -u):$(id -g)\" /workspace",
   "customizations": {
     "vscode": {
       "extensions": [

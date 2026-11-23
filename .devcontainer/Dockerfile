@@ -11,9 +11,14 @@
 #     insurance for future native modules / esbuild fallback builds, per the
 #     #125 analysis (DEVCONTAINER_NOTES.md, "Native modules" section).
 #
-# Build context: the `.devcontainer/` directory (the verify script builds with
-# `--file .devcontainer/devcontainer.json --context .devcontainer`), so this
-# Dockerfile must not COPY anything from the repository root.
+# Build context: the repository root. devcontainer.json sets
+# `build.context: "."` (repo root), which is the superset choice — it keeps
+# the image buildable if a COPY of repository files is ever needed.
+# `scripts/devcontainer-verify.sh` also builds this same Dockerfile, but with
+# `--context .devcontainer` (a smaller context); that still works because the
+# Dockerfile COPYs nothing, so both contexts are valid. The repository itself
+# is not baked into the image either way: it is mounted/copied into
+# /workspace by the devcontainer tooling (and by the verify script).
 #
 # All apt installs are non-interactive (DEBIAN_FRONTEND=noninteractive) so the
 # container builds cleanly in CI without a TTY.
@@ -70,20 +75,32 @@ ENV DOTNET_NOLOGO=1 \
     NUGET_XMLDOC_MODE=skip
 
 # Pre-warm the global NuGet cache with the exact package versions the
-# solution restores (plus the SDK's own tooling packages), so agent builds are
-# fast and work even with limited network access (parity with .devteam/Dockerfile).
-# NUGET_PACKAGES is intentionally /tmp/.nuget here AND in devcontainer.json, so
-# the pre-warmed cache is reused at runtime (the verify script's env-file
-# override in CI also points at /workspace/nuget/packages, which is fine for
-# the smoke test).
+# solution restores, so agent builds are fast and work even with limited
+# network access (parity with .devteam/Dockerfile). NUGET_PACKAGES is
+# intentionally /tmp/.nuget here AND in devcontainer.json, so the pre-warmed
+# cache is reused at runtime (the verify script's env-file override in CI
+# points at /workspace/nuget/packages, which is fine for the smoke test).
+#
+# Version notes (confirmed present on nuget.org as of 2026-02):
+#   * xunit.runner.visualstudio 3.1.4 — this package has a genuine 3.x line
+#     (3.0.0, 3.0.1, … 3.1.4, 3.1.5); it is NOT 2.x-only. The pin matches the
+#     exact version referenced by every test project in the repo.
+#   * xunit 2.9.3 is a direct dependency of xunit.runner.visualstudio 3.x
+#     (the 3.x runner supports xunit.v3 test projects and depends on the
+#     xunit 2.x core), which is why it is warmed explicitly.
+#
+# The whole block is best-effort (`|| true`): a transient NuGet outage or a
+# future version retraction must never break the dev-container image build
+# for everyone — the pre-warm only affects first-build latency, and any
+# package not cached here is restored on demand from the network.
 RUN mkdir -p /tmp/warm && cd /tmp/warm \
     && dotnet new console -n warm -o warm --framework net10.0 \
     && cd warm \
-    && dotnet add package Microsoft.NET.Test.Sdk --version 17.14.1 \
-    && dotnet add package xunit --version 2.9.3 \
-    && dotnet add package xunit.runner.visualstudio --version 3.1.4 \
-    && dotnet add package coverlet.collector --version 6.0.4 \
-    && dotnet restore \
+    && (dotnet add package Microsoft.NET.Test.Sdk --version 17.14.1 \
+        && dotnet add package xunit --version 2.9.3 \
+        && dotnet add package xunit.runner.visualstudio --version 3.1.4 \
+        && dotnet add package coverlet.collector --version 6.0.4 \
+        && dotnet restore) || true \
     && cd / \
     && rm -rf /tmp/warm
 
