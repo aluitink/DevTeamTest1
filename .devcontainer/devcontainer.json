@@ -1,0 +1,38 @@
+{
+  "name": "DevTeamTest1",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+  "workspaceFolder": "/workspace",
+  "containerEnv": {
+    "DEBIAN_FRONTEND": "noninteractive",
+    "DOTNET_NOLOGO": "1",
+    "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
+    "DOTNET_SKIP_FIRST_TIME_EXPERIENCE": "1",
+    "NUGET_PACKAGES": "/workspace/nuget/packages",
+    "NUGET_XMLDOC_MODE": "skip"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+  "postCreateCommand": "git --version && node --version && npm --version && (npm ci --no-audit --no-fund 2>/dev/null || npm install --no-audit --no-fund)",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "ms-vscode.vscode-typescript-next"
+      ],
+      "settings": {
+        "npm.scriptRunner": "npm",
+        "typescript.tsdk": "node_modules/typescript/lib",
+        "files.exclude": {
+          "**/node_modules": true,
+          "**/bin": true,
+          "**/obj": true
+        }
+      }
+    }
+  }
+}
