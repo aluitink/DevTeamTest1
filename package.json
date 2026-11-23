@@ -6,7 +6,8 @@
   "type": "module",
   "workspaces": [
     "src/lib/validation",
-    "src/api-responses"
+    "src/api-responses",
+    "src/app"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",

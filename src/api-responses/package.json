@@ -1,6 +1,6 @@
 {
   "name": "api-responses",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "private": true,
   "description": "Unified error handling and response formatting utilities for API route handlers (task #71).",
   "type": "module",
@@ -12,8 +12,8 @@
     "test": "npm run build && node --test dist/__tests__/"
   },
   "devDependencies": {
-    "@types/node": "^20.19.43",
-    "typescript": "5.4.5"
+    "@types/node": "^20.17.10",
+    "typescript": "^5.7.2"
   },
   "dependencies": {
     "zod": "^3.25.76"
