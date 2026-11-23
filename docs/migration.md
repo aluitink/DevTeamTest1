@@ -107,15 +107,18 @@ Entries are written using this template:
   should agents and CI use?" That ambiguity was the most likely cause of
   agent install failures (task #111).
 - **Alternatives Considered:** pnpm (the #64 proposal; rejected — the repo
-  is already npm end to end: committed `package-lock.json`, npm workspace
-  scripts in the root `package.json`, npm-based CI in
+  is already npm end to end: npm workspace scripts in the root
+  `package.json`, npm-based CI in
   `.github/workflows/ci.yml`, and npm instructions in `README.md` and
   `CONTRIBUTING.md`; pnpm's disk/isolation benefits do not apply to a small
   two-workspace repo, and switching would rewrite every npm-specific
   artifact while re-introducing transition risk). yarn (rejected — same
   arguments; no existing artifacts and not part of the #64 proposal).
-- **Link to PR/Issue:** #111 (re-scopes/closes #64); full rationale in
-  `docs/package-manager-decision.md`.
+  Issue #64 was re-scoped and closed ("Superseded by #111: npm is the
+  canonical package manager"); the regenerated `package-lock.json` is
+  committed by #111 so `npm ci` works from a clean clone.
+- **Link to PR/Issue:** #111 (supersedes and closes #64); full rationale
+  in `docs/package-manager-decision.md`.
 
 ### Connection to `dropped` and `deprecated` Justifications
 

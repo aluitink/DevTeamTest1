@@ -119,8 +119,11 @@ Rules:
 ### Canonical package manager: npm
 
 **npm is the single canonical package manager** for this repository
-(decision #111, superseding the pnpm proposal in #64). Downstream tasks
-should treat `PM = npm` as a fixed input.
+(decision #111, superseding the pnpm proposal in #64). The #64 proposal
+was re-scoped and closed on this basis — its issue was retitled
+"Superseded by #111: npm is the canonical package manager" — so #64 no
+longer proposes pnpm. Downstream tasks should treat `PM = npm` as a
+fixed input.
 
 - Use `npm` for all installs, lockfile updates, and workspace scripts
   (`npm ci`, `npm run build`, `npm test`, …). Do **not** use pnpm, yarn, or

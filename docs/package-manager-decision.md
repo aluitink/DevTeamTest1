@@ -6,8 +6,8 @@
 - **Downstream flag:** `PM = npm` (downstream tasks should branch on this:
   use `npm`, `package-lock.json`, and npm workspace scripts — do not adopt
   pnpm or commit a `pnpm-lock.yaml`).
-- **Tasks:** #111 (this decision); re-scopes/closes #64 ("Propose adopting
-  pnpm"), which is no longer actionable.
+- **Tasks:** #111 (this decision); supersedes and closes #64 ("Propose
+  adopting pnpm"), which is no longer actionable.
 
 This note is written so it can be lifted into a PR description verbatim.
 
@@ -25,9 +25,12 @@ through npm.
    `package.json` declares an npm workspace
    (`"workspaces": ["src/lib/validation", "src/api-responses"]`) and npm
    workspace scripts (`npm run build --workspaces --if-present`, etc.);
-   `package-lock.json` (lockfileVersion 3) is committed at the root;
    `CONTRIBUTING.md`, `README.md`, and `.github/workflows/ci.yml` all
-   document and run `npm ci` / `npm run ...`. Choosing npm means the
+   document and run `npm ci` / `npm run ...`. The `package-lock.json`
+   (lockfileVersion 3) was regenerated from the current `package.json`
+   set and is **committed by this PR** — before this decision no lockfile
+   was committed, so `npm ci` from a clean clone would have fallen
+   through to a non-reproducible `npm install`. Choosing npm means the
    decision matches every existing artifact instead of rewriting them.
 
 2. **It directly fixes the agent install-failure problem this task
@@ -50,11 +53,22 @@ through npm.
 
 4. **It resolves the open #64 proposal decisively.** Task #64 proposed
    evaluating pnpm. This decision closes that question: pnpm was considered
-   and rejected for this repo today (see #111). #64 must be re-scoped or
-   closed so that it no longer proposes pnpm; the single source of truth
-   for the package-manager question is this document plus the entry in the
-   Decision Log below. No second manager may be introduced without a new
-   Decision Log entry that supersedes this one.
+   and rejected for this repo today (see #111).
+
+   **Action taken on #64:** issue #64 ("Propose adopting pnpm") has been
+   re-scoped and closed. Its title was changed to **"Superseded by #111:
+   npm is the canonical package manager"** and its body now reads:
+   > **Superseded by #111.** npm was chosen as the single canonical package
+   > manager (downstream flag: `PM = npm`); the pnpm proposal is no longer
+   > actionable and this issue is closed. See
+   > `docs/package-manager-decision.md` for the full rationale and the
+   > matching Decision Log entry in `docs/migration.md`.
+
+   Because issue-tracker state does not appear in a PR diff, this document
+   is the in-repo record of that update. The single source of truth for the
+   package-manager question is this document plus the entry in the Decision
+   Log below. No second manager may be introduced without a new Decision
+   Log entry that supersedes this one.
 
 ## Consequences / rules going forward
 
@@ -72,10 +86,11 @@ through npm.
 ## Alternatives considered
 
 - **pnpm** (the #64 proposal) — rejected: the repo is already npm-native
-  (lockfile, workspace scripts, CI, docs); pnpm's benefits (disk usage,
-  strict isolation) do not apply to a small two-workspace repository, and
-  adopting it would rewrite every npm-specific artifact and re-introduce
-  transition risk instead of removing the ambiguity.
+  (workspace scripts, CI, docs, and the `package-lock.json` this PR
+  commits); pnpm's benefits (disk usage, strict isolation) do not apply to
+  a small two-workspace repository, and adopting it would rewrite every
+  npm-specific artifact and re-introduce transition risk instead of
+  removing the ambiguity.
 - **yarn** — rejected: same arguments as pnpm, with no existing yarn
   artifacts; not part of the #64 proposal.
 
