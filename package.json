@@ -4,6 +4,7 @@
   "private": true,
   "description": "Root workspace for the DevTeamTest1 repository. Modern TypeScript projects live under src/ (see CONTRIBUTING.md).",
   "type": "module",
+  "packageManager": "npm@10.8.2",
   "workspaces": [
     "src/lib/validation",
     "src/api-responses"
