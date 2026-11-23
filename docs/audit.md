@@ -451,3 +451,141 @@ in-repo CI; the in-repo consumers are the manual smoke-test script
 `scripts/devcontainer-verify.sh` (local-only image tag) and documentation.
 No externally-pulled, pre-published dev image tag is referenced anywhere —
 the image is always built from this Dockerfile by the external orchestrator.
+
+## Dev Tools & System Dependencies for the Four Root Scripts (Task #118)
+
+Enumeration of the exact dev tools and system dependencies the four root
+`package.json` scripts — `build`, `test`, `lint`, `type-check` — require
+inside the container (task #118, parent #102). Investigation and
+documentation only — no configuration changes were made. Cross-checked
+against the #116 container findings (§"Agent Development Environment &
+Container/Runtime") and #131 (`docs/inventory-container-config-ci-wiring.md`),
+with a fresh probe of this agent container on 2026-11-23 (all "status" notes
+below re-verified by direct command execution, not just cited from #116).
+
+### The four root scripts (verbatim from root `package.json`)
+
+| # | Script | Command | What it executes |
+| --- | --- | --- | --- |
+| 1 | `build` | `npm run build --workspaces --if-present` | `tsc -p tsconfig.json` in `src/lib/validation` and `src/api-responses` (emits `dist/`) |
+| 2 | `test` | `npm run test --workspaces --if-present` | `vitest run` in `src/lib/validation` and `src/api-responses` |
+| 3 | `lint` | `eslint .` | ESLint 8.57.1 (flat config `eslint.config.mjs`, extends `next/core-web-vitals` via `@eslint/eslintrc` FlatCompat) from the repo root |
+| 4 | `type-check` | `tsc --noEmit` | TypeScript 5.7.x type-check from the root `tsconfig.json` (extends `tsconfig.base.json`, includes `src/**/*`) |
+
+**Workspace scope note:** `src/app/items` has its own `package.json` but is
+**not** listed in the root `workspaces` array, so `--workspaces --if-present`
+does not reach it. Its build/test/lint/typecheck scripts are not executed by
+any of the four root scripts. Its source is, however, reached by `type-check`
+(3) and `lint` (4) because both scan from the repo root (`tsconfig.json`
+includes `src/**/*`; `eslint .` lints everything outside the `ignores`
+list). So `src/app/items` requires **TypeScript + React types at type-check
+time** and **ESLint + the Next.js lint plugin at lint time**, even though its
+own `build`/`test` scripts never run.
+
+All four scripts assume dependencies are already installed with
+**`npm ci`** (root `package-lock.json`, lockfileVersion 3; npm is the
+canonical manager per task #111 / `docs/package-manager-decision.md` and
+CONTRIBUTING.md). Install is a precondition, not one of the four scripts.
+
+### Dev tools required (JavaScript/Node toolchain)
+
+All are resolved from the repo-root `node_modules` after `npm ci` (single
+hoisted install across root + 2 workspaces):
+
+| Tool | Pinned/declared version (lockfile unless noted) | Required by script(s) | Where declared |
+| --- | --- | --- | --- |
+| Node.js | **20.x** (README prerequisite table; CI `actions/setup-node` `node-version: 20`). Hard floor: **≥ 18.0** (Vitest 2.x); no `engines` or `packageManager` field in any `package.json` to pin it | all four (npm, tsc, eslint, and vitest are all Node CLIs) | README; `.github/workflows/ci.yml` |
+| npm | **10.x** (ships with Node 20) | all four (script runner; `npm run … --workspaces` needs npm workspace support, npm ≥ 7) | README; CI |
+| TypeScript compiler (`tsc`) | 5.7.3 (root); workspaces declare ^5.7.2 | `build`, `type-check` | root + each workspace `devDependencies` |
+| Vitest | 2.1.9 (declared ^2.1.8) | `test` | workspace `devDependencies` |
+| esbuild (Vitest/vite transitive) | 0.21.5, **prebuilt platform binaries only** (e.g. `@esbuild/linux-x64`) | `test` (JS transformation) | `package-lock.json` transitive |
+| ESLint | 8.57.1 (declared ^8.57.1) | `lint` | root `devDependencies` |
+| `@eslint/eslintrc` | ^3.3.7 | `lint` (FlatCompat in `eslint.config.mjs`) | root `devDependencies` |
+| `eslint-config-next` | ^14.2.15 (pulls the `eslint-plugin-*` rules it ships) | `lint` (config extended in `eslint.config.mjs`) | root `devDependencies` |
+| `next` | 14.2.15 (exact) | `lint` only (config import). **Not** needed at runtime by any of the four scripts — `src/app/items` tests/build alias/mock `next` locally; the root `build`/`test` workspaces don't import it | root `devDependencies` |
+| `react`, `react-dom` | 18.3.1 (exact) | **types only** at `type-check`/`build` time (via `@types/react`, `@types/react-dom`, for `src/app/items/**/*.tsx`); not loaded at runtime by the four scripts | root `devDependencies` |
+| `@types/node` | root ^20.19.43; workspaces ^20.17.10 | `build`, `type-check` (Node type definitions; `"types": ["node"]` in every tsconfig) | root + workspace `devDependencies` |
+| `@types/react`, `@types/react-dom` | ^18.3.12 / ^18.3.1 | `type-check` (and `build` of `src/app/items` if it were ever a workspace) — JSX type-checking for `src/app/items/src/**/*.tsx` | root `devDependencies` |
+| `zod` | ^3.24.1 (dep of both workspaces) | runtime import by code type-checked/tested by `build`, `type-check`, `test` | workspace `dependencies` |
+
+No other JS tooling is invoked: no prettier, no bundler (the "build" is bare
+`tsc`), no Next.js CLI (`next build` is never run), no codegen.
+
+### System / OS dependencies required inside the container
+
+| Dependency | Required by | Notes |
+| --- | --- | --- |
+| **POSIX shell (`bash`)** + standard coreutils (`mktemp`, `tar`, …) | npm itself, all four scripts | npm launches scripts via `sh`/`bash`; the smoke-test script explicitly uses `bash -lc` |
+| **libc + a C toolchain capable of running prebuilt native binaries** | `test` (esbuild), transitively everything Node | All native deps in this tree (`esbuild`, `fsevents`) ship **prebuilt platform binaries**; no source compilation of native modules is triggered by `npm ci`. A C/C++ compiler (`gcc`/`make`) is needed **only** if a package fell back to building from source, which none do today. `fsevents` is macOS-only and its install is skipped on Linux |
+| **Node.js ≥ 18 (20.x expected) + npm 10.x** | all four | see table above |
+| **git** | none of the four directly | Required by the repo workflow around them: `npm ci` does not call git (lockfile only), but `scripts/devcontainer-verify.sh` (which drives the four scripts) requires `git archive` on the host, and the orchestrator's clone/commit does. Installed in `.devteam/Dockerfile` |
+| **egress to `https://registry.npmjs.org`** | install only (`npm ci`) | Not needed by the four scripts once `node_modules` exists. #116 verified no egress restrictions in the container |
+| **Sufficient CPU/RAM** | `test` | Vitest is configured conservatively (`pool: "forks"`, `singleFork: true` in both workspaces) specifically so it runs in constrained sandbox/CI environments; container here: 24 CPUs, 62 GB RAM (no constraint in practice) |
+| **`.NET SDK`, NuGet** | **none of the four** | The four root scripts are pure-JS; the .NET stack is a separate dependency tree exercised by `dotnet build`/`dotnet test`, not by any npm script |
+
+### Per-script requirement matrix
+
+| Requirement | build | test | lint | type-check |
+| --- | :-: | :-: | :-: | :-: |
+| Node.js 20.x runtime (≥ 18 floor) | ✅ | ✅ | ✅ | ✅ |
+| npm (script runner / workspaces) | ✅ | ✅ | ✅ | ✅ |
+| `node_modules` installed via `npm ci` | ✅ | ✅ | ✅ | ✅ |
+| TypeScript (`tsc` 5.7.3) | ✅ | — | — | ✅ |
+| Vitest 2.1.9 (+ esbuild 0.21.5 prebuilt binaries) | — | ✅ | — | — |
+| ESLint 8.57.1 + `@eslint/eslintrc` + `eslint-config-next` (14.2.15) | — | — | ✅ | — |
+| `@types/node`, `@types/react`, `@types/react-dom` | ✅ | — | — | ✅ |
+| `react` / `react-dom` / `next` (type-check & lint config only) | partial¹ | — | ✅ | ✅ |
+| `zod` (runtime of tested/type-checked code) | partial¹ | ✅ | — | partial¹ |
+| bash / coreutils | ✅ | ✅ | ✅ | ✅ |
+| C compiler toolchain (`gcc`/`make`) | ⚠️ not needed² | ⚠️ not needed² | ⚠️ not needed² | ⚠️ not needed² |
+| git | — | — | — | — |
+| network egress | — (post-install) | — (post-install) | — (post-install) | — (post-install) |
+
+¹ The root `build`/`type-check` compile the two workspaces only; `zod` and
+React types matter to them only insofar as the workspace source imports
+them (`src/app/items` — which imports both — is outside the workspaces and
+outside the root `build`'s per-project scope, but *is* inside the root
+`type-check`'s `src/**/*` glob, so **type-check** genuinely needs
+`@types/react(-dom)`; React/next values are never *executed* by any of the
+four scripts).
+
+² Required only as a fallback if `npm ci` ever needed to compile a native
+module from source; no package in the current lockfile does that on
+linux-x64.
+
+### Cross-check against container findings (task #116) — what is unmet
+
+Re-probed in this agent container (2026-11-23): `which node` → not found,
+`which npm` → not found, no `node`/`npm` binary anywhere,
+`node_modules/` not present (install never ran); `git 2.43.0` present;
+`gcc`/`g++`/`make`/`python3` all **not** installed (only needed as a
+fallback — see note ² — so their absence is harmless); `.NET SDK 10.0.401`
+present but irrelevant to these four scripts.
+
+| Requirement (from tables above) | In container? | Status vs. #116 findings |
+| --- | --- | --- |
+| Node.js 20.x (≥18) | **no** — no Node runtime at all | ❌ **UNMET** (identical to #116 finding #1: "Node.js/npm are missing from the agent container") |
+| npm 10.x | **no** — no npm binary | ❌ **UNMET** (same gap) |
+| `node_modules` (post `npm ci`) | **no** — directory absent | ❌ UNMET, direct consequence of the npm gap |
+| `tsc`, Vitest, ESLint, esbuild binaries, React/Next/zod packages | no (all in `node_modules`) | ❌ UNMET, direct consequence of the npm gap |
+| bash + coreutils | **yes** (Ubuntu 24.04 base) | ✅ met |
+| git | **yes** (2.43.0, installed by `.devteam/Dockerfile`) | ✅ met |
+| C toolchain (`gcc`/`make`) | no | ✅ not required (prebuilt native binaries only; see note ²) |
+| Egress to registry.npmjs.org | **yes** (no proxy/firewall found) | ✅ met — install would work if npm existed |
+| CPU/RAM for Vitest | 24 CPUs / 62 GB | ✅ met (Vitest's single-fork config removes thread pressure regardless) |
+| `.NET SDK` (needed by the four scripts) | not required | n/a — the four scripts are JS-only |
+
+**Bottom line:** every one of the four root scripts is currently **unable to
+run in the agent container**. The single blocking requirement is **Node.js
+20.x + npm 10.x** (which also pulls in, via `npm ci`, `tsc`, Vitest, ESLint,
+esbuild prebuilt binaries, and the type packages). Nothing else is missing:
+the OS-level dependencies (bash/coreutils, prebuilt-binary execution, egress,
+git) are all satisfied, and no compiler toolchain is required. This matches
+#116 finding #1 and #131 §1 ("Toolchain gap") exactly — both prior audits
+flagged the same Node/npm absence, and this task adds the per-script
+enumeration confirming that the four scripts' *entire* unmet dependency
+surface reduces to that one gap. Fix options noted there still stand: add
+Node to `.devteam/Dockerfile` or provision at run time;
+`scripts/devcontainer-verify.sh` would exercise all four scripts end-to-end
+once Node is present (its host-side `docker`/`podman` requirement is a
+host tool, not a container dependency).
