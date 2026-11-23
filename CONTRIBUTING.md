@@ -116,6 +116,24 @@ Rules:
 6. Schemas for validated boundaries **must** be covered by unit tests,
    including at least one invalid-input case per schema.
 
+### Canonical package manager: npm
+
+**npm is the single canonical package manager** for this repository
+(decision #111, superseding the pnpm proposal in #64). Downstream tasks
+should treat `PM = npm` as a fixed input.
+
+- Use `npm` for all installs, lockfile updates, and workspace scripts
+  (`npm ci`, `npm run build`, `npm test`, …). Do **not** use pnpm, yarn, or
+  any other manager; never commit `pnpm-lock.yaml` or a `packageManager`
+  field pinning a non-npm manager.
+- **`package-lock.json` must stay committed.** Any change to the root or a
+  workspace `package.json` must be committed together with the regenerated
+  `package-lock.json` so `npm ci` works from a clean clone.
+- The `"type": "module"` + npm workspaces layout
+  (`src/lib/validation`, `src/api-responses`) is supported natively by npm;
+  see [`docs/package-manager-decision.md`](docs/package-manager-decision.md)
+  for the full rationale.
+
 ## General pull request process
 
 - Keep pull requests small and focused on a single logical change.

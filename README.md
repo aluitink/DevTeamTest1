@@ -13,6 +13,8 @@ workflow, and decision log.
   entities, UI components, and existing tests.
 - [Migration Statuses](docs/migration/statuses.md) — the `migrated`,
   `deprecated`, and `dropped` lifecycle states.
+- [Package Manager Decision](docs/package-manager-decision.md) — **npm** is
+  the single canonical package manager (task #111).
 
 ## Table of Contents
 
