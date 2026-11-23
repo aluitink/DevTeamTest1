@@ -29,3 +29,9 @@ jobs:
           else
             echo "No package.json found; skipping dependency installation."
           fi
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run type-check
